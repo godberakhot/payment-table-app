@@ -4,47 +4,36 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import io
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone, timedelta
 
-# ---------------- HELPERS ----------------
+# ---------------- FUNCTIONS ----------------
 
 def today_date():
     ist = timezone(timedelta(hours=5, minutes=30))
     return datetime.now(ist).strftime("%d-%m-%Y")
 
-def parse_number(value):
+def parse_number(val):
     try:
-        value = str(value).replace(",", "").strip()
-        return float(value) if value else None
+        return float(str(val).replace(",", "").strip())
     except:
         return None
 
-def format_indian_number(num):
-    if num is None:
+def format_indian(num):
+    if not num:
         return ""
     n = int(num)
     s = str(n)[::-1]
-    parts = [s[:3]]
+    out = s[:3]
     s = s[3:]
     while s:
-        parts.append(s[:2])
+        out += "," + s[:2]
         s = s[2:]
-    return "₹" + ",".join(parts)[::-1]
+    return "₹" + out[::-1]
 
-# ---------------- IMAGE GENERATION ----------------
+def generate_image(data):
+    df = pd.DataFrame(data)
 
-def generate_image(name, date, amount, weight, due_date, rate, adv):
-    df = pd.DataFrame([{
-        "DATE": date or today_date(),
-        "NAME": name.upper(),
-        "AMOUNT": format_indian_number(parse_number(amount)),
-        "WT (g)": weight,
-        "DUE DATE": due_date,
-        "RATE": format_indian_number(parse_number(rate)),
-        "ADV %": adv
-    }])
-
-    fig, ax = plt.subplots(figsize=(18, 3.5))
+    fig, ax = plt.subplots(figsize=(20, 4))
     ax.axis("off")
 
     table = ax.table(
@@ -52,30 +41,29 @@ def generate_image(name, date, amount, weight, due_date, rate, adv):
         colLabels=df.columns,
         cellLoc="center",
         loc="center",
-        bbox=[0.02, 0.05, 0.96, 0.90]
+        bbox=[0.02, 0.05, 0.96, 0.9]
     )
 
     table.auto_set_font_size(False)
-    table.set_fontsize(16)
-    table.scale(1.4, 2.5)
+    table.set_fontsize(14)
+    table.scale(1.4, 2.2)
 
-    for (row, col), cell in table.get_celld().items():
-        if row == 0:
-            cell.set_facecolor("#1E3A8A")
-            cell.set_text_props(color="white", weight="bold")
-        else:
-            cell.set_facecolor("#F9FAFB")
-            cell.set_text_props(weight="bold")
+    header_color = "#1E3A8A"
+
+    for col in range(len(df.columns)):
+        cell = table[(0, col)]
+        cell.set_facecolor(header_color)
+        cell.set_text_props(color="white", weight="bold")
 
     plt.suptitle(
         "JOS ALUKKAS INDIA PRIVATE LIMITED - BELAGAVI BRANCH",
-        fontsize=22,
+        fontsize=20,
         fontweight="bold",
         y=0.98
     )
 
     buf = io.BytesIO()
-    plt.savefig(buf, dpi=300, bbox_inches="tight", format="png", facecolor="white")
+    plt.savefig(buf, format="png", dpi=300, bbox_inches="tight")
     plt.close(fig)
     buf.seek(0)
 
@@ -83,33 +71,56 @@ def generate_image(name, date, amount, weight, due_date, rate, adv):
 
 # ---------------- STREAMLIT UI ----------------
 
-st.set_page_config(page_title="Payment Table Generator", layout="centered")
+st.set_page_config(page_title="Payment Table Generator", layout="wide")
+st.title("💎 Payment Table Generator")
 
-st.title("💰 Payment Table Generator")
+num_customers = st.number_input(
+    "How many customers?",
+    min_value=1,
+    max_value=10,
+    value=1,
+    step=1
+)
 
-name = st.text_input("Customer Name")
-date = st.text_input("Date (DD-MM-YYYY)", value=today_date())
-amount = st.text_input("Amount (INR)")
-weight = st.text_input("Weight (grams)")
-due_date = st.text_input("Due Date")
-rate = st.text_input("Rate per gram")
-adv = st.text_input("Advance %")
+customers = []
+
+for i in range(num_customers):
+    st.subheader(f"Customer {i+1}")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        name = st.text_input("Name", key=f"name{i}")
+        date = st.text_input("Date", value=today_date(), key=f"date{i}")
+        amount = st.text_input("Amount", key=f"amount{i}")
+
+    with col2:
+        wt = st.text_input("Weight (g)", key=f"wt{i}")
+        rate = st.text_input("Rate/g", key=f"rate{i}")
+
+    with col3:
+        adv = st.text_input("Advance %", key=f"adv{i}")
+        due = st.text_input("Due Date", key=f"due{i}")
+
+    customers.append({
+        "DATE": date,
+        "NAME": name.upper(),
+        "AMOUNT": format_indian(parse_number(amount)),
+        "WT (g)": wt,
+        "RATE": format_indian(parse_number(rate)),
+        "ADV %": adv,
+        "DUE DATE": due
+    })
+
+st.markdown("---")
 
 if st.button("📊 GENERATE IMAGE"):
-    if not name:
-        st.warning("Please enter customer name")
-    else:
-        image_bytes = generate_image(
-            name, date, amount, weight, due_date, rate, adv
-        )
+    img = generate_image(customers)
 
-        st.image(image_bytes)
-
-        filename = f"{name.replace(' ', '_')}_payment.png"
-
-        st.download_button(
-            label="⬇️ DOWNLOAD IMAGE",
-            data=image_bytes,
-            file_name=filename,
-            mime="image/png"
-        )
+    st.image(img)
+    st.download_button(
+        "⬇️ DOWNLOAD IMAGE",
+        data=img,
+        file_name="payment_table.png",
+        mime="image/png"
+    )
