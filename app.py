@@ -67,6 +67,12 @@ def generate_image(data):
 
     return buf.getvalue()
 
+# ---------------- SESSION HELPER ----------------
+
+def apply_today_to_all(num_customers):
+    for i in range(num_customers):
+        st.session_state[f"date{i}"] = today_date()
+
 # ---------------- STREAMLIT UI ----------------
 
 st.set_page_config(page_title="JOS ALUKKAS CUS ADV", layout="wide")
@@ -80,8 +86,9 @@ num_customers = st.number_input(
     step=1
 )
 
-# Button to apply today's date to ALL customers
-apply_today = st.button("📅 Apply Today's Date")
+# Button to apply today's date to all customers
+if st.button("📅 APPLY TODAY'S DATE"):
+    apply_today_to_all(num_customers)
 
 customers = []
 
@@ -91,37 +98,27 @@ shared_rate = st.text_input("Rate per gram (applies to all customers)")
 for i in range(num_customers):
     st.subheader(f"Customer {i+1}")
 
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        name = st.text_input("Name", key=f"name{i}")
-        date = st.text_input(
-            "Date",
-            value=today_date() if apply_today else "",
-            key=f"date{i}"
-        )
-        amount = st.text_input("Amount", key=f"amount{i}")
-
-    with col2:
-        wt = st.text_input("Weight (g)", key=f"wt{i}")
-        rate = st.text_input(
-            "Rate/g",
-            value=shared_rate,
-            key=f"rate{i}"
-        )
-
-    with col3:
-        due = st.text_input("Due Date", key=f"due{i}")
-        adv = st.text_input("Advance %", key=f"adv{i}")
+    # ---- FIELD ORDER AS REQUESTED ----
+    name = st.text_input("Customer Name", key=f"name{i}")
+    date = st.text_input("Date (DD-MM-YYYY)", key=f"date{i}")
+    amount = st.text_input("Amount (INR)", key=f"amount{i}")
+    wt = st.text_input("Weight (grams)", key=f"wt{i}")
+    due = st.text_input("Due Date", key=f"due{i}")
+    rate = st.text_input(
+        "Rate per gram",
+        value=shared_rate,
+        key=f"rate{i}"
+    )
+    adv = st.text_input("Advance %", key=f"adv{i}")
 
     if name.strip():
         customers.append({
             "DATE": date,
             "NAME": name.upper(),
-            "AMOUNT": format_indian(parse_number(amount)),
+            "ADV AMOUNT": format_indian(parse_number(amount)),
             "WT (g)": wt,
             "DUE DATE": due,
-            "RATE": format_indian(parse_number(rate)),
+            "RATE/GRAM": format_indian(parse_number(rate)),
             "ADV %": adv
         })
 
@@ -132,7 +129,6 @@ if st.button("📊 GENERATE IMAGE"):
         st.warning("Please enter at least one customer")
     else:
         img = generate_image(customers)
-
         st.image(img)
         st.download_button(
             "⬇️ DOWNLOAD IMAGE",
