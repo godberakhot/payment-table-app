@@ -32,10 +32,8 @@ def format_indian(num):
 
 def generate_image(data):
     df = pd.DataFrame(data)
-
     fig, ax = plt.subplots(figsize=(20, 4))
     ax.axis("off")
-
     table = ax.table(
         cellText=df.values,
         colLabels=df.columns,
@@ -43,7 +41,6 @@ def generate_image(data):
         loc="center",
         bbox=[0.02, 0.05, 0.96, 0.9]
     )
-
     table.auto_set_font_size(False)
     table.set_fontsize(15)
     table.scale(1.4, 2.4)
@@ -60,18 +57,25 @@ def generate_image(data):
             cell.set_facecolor("#F9FAFB")
             cell.set_text_props(weight="bold")  # BODY TEXT BOLD
 
+    # ✅ IMAGE HEADING
+    image_heading = "JOS ALUKKAS INDIA PRIVATE LIMITED - BELAGAVI BRANCH"
+    plt.suptitle(image_heading, fontsize=22, fontweight="bold", y=0.98)
+
     buf = io.BytesIO()
     plt.savefig(buf, format="png", dpi=300, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     buf.seek(0)
-
     return buf.getvalue()
 
-# ---------------- SESSION HELPER ----------------
+# ---------------- STREAMLIT SESSION HELPERS ----------------
 
 def apply_today_to_all(num_customers):
     for i in range(num_customers):
         st.session_state[f"date{i}"] = today_date()
+
+def apply_rate_to_all(num_customers, rate_value):
+    for i in range(num_customers):
+        st.session_state[f"rate{i}"] = rate_value
 
 # ---------------- STREAMLIT UI ----------------
 
@@ -86,14 +90,24 @@ num_customers = st.number_input(
     step=1
 )
 
-# Button to apply today's date to all customers
+# Shared rate (applies to all)
+if "shared_rate" not in st.session_state:
+    st.session_state["shared_rate"] = ""
+
+shared_rate = st.text_input(
+    "Rate per gram (applies to all customers)",
+    value=st.session_state["shared_rate"]
+)
+st.session_state["shared_rate"] = shared_rate
+
+# Apply shared rate to all customer rate inputs
+apply_rate_to_all(num_customers, shared_rate)
+
+# Apply today button
 if st.button("📅 APPLY TODAY'S DATE"):
     apply_today_to_all(num_customers)
 
 customers = []
-
-# Shared rate (auto-fill)
-shared_rate = st.text_input("Rate per gram (applies to all customers)")
 
 for i in range(num_customers):
     st.subheader(f"Customer {i+1}")
@@ -106,7 +120,7 @@ for i in range(num_customers):
     due = st.text_input("Due Date", key=f"due{i}")
     rate = st.text_input(
         "Rate per gram",
-        value=shared_rate,
+        value=st.session_state.get(f"rate{i}", ""),
         key=f"rate{i}"
     )
     adv = st.text_input("Advance %", key=f"adv{i}")
@@ -115,10 +129,10 @@ for i in range(num_customers):
         customers.append({
             "DATE": date,
             "NAME": name.upper(),
-            "ADV AMOUNT": format_indian(parse_number(amount)),
+            "AMOUNT": format_indian(parse_number(amount)),
             "WT (g)": wt,
             "DUE DATE": due,
-            "RATE/GRAM": format_indian(parse_number(rate)),
+            "RATE": format_indian(parse_number(rate)),
             "ADV %": adv
         })
 
