@@ -32,6 +32,7 @@ def format_indian(num):
 
 def generate_image(data):
     df = pd.DataFrame(data)
+
     fig, ax = plt.subplots(figsize=(20, 4))
     ax.axis("off")
 
@@ -50,6 +51,8 @@ def generate_image(data):
     header_color = "#1E3A8A"
     border_color = "#D1D5DB"
 
+    name_col_index = df.columns.get_loc("NAME")
+
     for (row, col), cell in table.get_celld().items():
         cell.set_edgecolor(border_color)
 
@@ -60,13 +63,20 @@ def generate_image(data):
             cell.set_facecolor("#F9FAFB")
             cell.set_text_props(weight="bold")
 
-            # ✅ WRAP TEXT ONLY FOR NAME COLUMN
-            if df.columns[col] == "NAME":
-                cell.get_text().set_wrap(True)
+        # ✅ FORCE WRAP ONLY FOR NAME COLUMN
+        if col == name_col_index:
+            cell.set_width(0.22)             # 👈 controls wrapping
+            cell.get_text().set_wrap(True)
+            cell.get_text().set_ha("center")
+            cell.get_text().set_va("center")
 
     # IMAGE HEADING
-    image_heading = "JOS ALUKKAS INDIA PRIVATE LIMITED - BELAGAVI BRANCH"
-    plt.suptitle(image_heading, fontsize=22, fontweight="bold", y=0.98)
+    plt.suptitle(
+        "JOS ALUKKAS INDIA PRIVATE LIMITED - BELAGAVI BRANCH",
+        fontsize=22,
+        fontweight="bold",
+        y=0.98
+    )
 
     buf = io.BytesIO()
     plt.savefig(buf, format="png", dpi=300, bbox_inches="tight", facecolor="white")
@@ -97,7 +107,6 @@ num_customers = st.number_input(
     step=1
 )
 
-# Shared rate
 if "shared_rate" not in st.session_state:
     st.session_state["shared_rate"] = ""
 
