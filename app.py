@@ -103,7 +103,7 @@ def apply_rate_to_all(num_customers, rate_value):
 # ---------------- STREAMLIT UI ----------------
 
 st.set_page_config(page_title="JOS ALUKKAS CUS ADV", layout="wide")
-st.title("💎 JOS ALUKKAS CUS ADV")
+st.title("JOS ALUKKAS CUS ADV")
 
 num_customers = st.number_input(
     "How many customers?",
