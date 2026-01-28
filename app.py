@@ -32,6 +32,23 @@ def format_indian(num):
 
 def generate_image(data):
     df = pd.DataFrame(data)
+    
+    # Break long names into multiple lines
+    for i, row in enumerate(data):
+        name = row['NAME']
+        words = name.split()
+        # Break into lines of ~2-3 words each
+        lines = []
+        current_line = []
+        for word in words:
+            current_line.append(word)
+            if len(' '.join(current_line)) > 20:  # ~20 chars per line
+                lines.append(' '.join(current_line))
+                current_line = []
+        if current_line:
+            lines.append(' '.join(current_line))
+        df.at[i, 'NAME'] = '\n'.join(lines)
+    
     fig, ax = plt.subplots(figsize=(20, 4))
     ax.axis("off")
     table = ax.table(
@@ -45,8 +62,8 @@ def generate_image(data):
     table.set_fontsize(15)
     table.scale(1.4, 2.4)
 
-    # Set column widths to prevent overlap
-    col_widths = [0.12, 0.25, 0.15, 0.10, 0.12, 0.13, 0.10]  # DATE, NAME, AMOUNT, WT, DUE DATE, RATE, ADV%
+    # Set column widths
+    col_widths = [0.11, 0.30, 0.14, 0.09, 0.11, 0.13, 0.09]  # DATE, NAME, AMOUNT, WT, DUE DATE, RATE, ADV%
     for i, width in enumerate(col_widths):
         for row in range(len(df) + 1):
             table[(row, i)].set_width(width)
