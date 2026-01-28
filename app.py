@@ -31,7 +31,8 @@ def format_indian(num):
 
 def generate_image(data):
     df = pd.DataFrame(data)
-    fig, ax = plt.subplots(figsize=(20, 8))  # Increased height for better wrapping
+    # Increased figure height to accommodate stacked text
+    fig, ax = plt.subplots(figsize=(22, 8)) 
     ax.axis("off")
     
     table = ax.table(
@@ -39,46 +40,49 @@ def generate_image(data):
         colLabels=df.columns,
         cellLoc="center",
         loc="center",
-        bbox=[0.02, 0.02, 0.96, 0.95]  # Adjusted bbox for more space
+        bbox=[0.02, 0.05, 0.96, 0.9]
     )
-    
+
     table.auto_set_font_size(False)
-    table.set_fontsize(14)  # Slightly smaller for better fit
-    table.scale(1.2, 3.0)  # Increased row scaling height
-    
+    table.set_fontsize(16)
+    # Increased vertical scale (4.5) to prevent overlapping when names stack
+    table.scale(1.2, 4.5) 
+
     header_color = "#1E3A8A"
     border_color = "#D1D5DB"
     name_col_index = df.columns.get_loc("NAME")
-    
+
     for (row, col), cell in table.get_celld().items():
         cell.set_edgecolor(border_color)
-        cell.PAD = 0.05  # Add padding to prevent tight text
         
+        # Set specific widths for columns
+        if col == name_col_index:
+            cell.set_width(0.20) # Narrower width forces the text to wrap/stack
+        else:
+            cell.set_width(0.12)
+
         if row == 0:
             cell.set_facecolor(header_color)
             cell.set_text_props(color="white", weight="bold")
         else:
             cell.set_facecolor("#F9FAFB")
+            # ALL TEXT BOLD
             cell.set_text_props(weight="bold")
-        
-        # FIXED: Set explicit widths for ALL columns to prevent expansion
-        if col == name_col_index:
-            cell.set_width(0.25)  # Wider for name with wrapping
-            text_obj = cell.get_text()
-            text_obj.set_wrap(True)
-            text_obj.set_ha("center")
-            text_obj.set_va("center")
-            text_obj.set_multialignment('center')  # Better multi-line centering
-        else:
-            cell.set_width(0.12)  # Fixed narrow width for all other columns
-    
+            
+            if col == name_col_index:
+                txt = cell.get_text()
+                txt.set_wrap(True)
+                # This ensures the words stack vertically as requested
+                txt.set_verticalalignment('center')
+                txt.set_multialignment('center')
+
     plt.suptitle(
         "JOS ALUKKAS INDIA PRIVATE LIMITED - BELAGAVI BRANCH",
-        fontsize=22,
+        fontsize=24,
         fontweight="bold",
-        y=0.99
+        y=0.98
     )
-    
+
     buf = io.BytesIO()
     plt.savefig(buf, format="png", dpi=300, bbox_inches="tight", facecolor="white")
     plt.close(fig)
@@ -104,9 +108,9 @@ num_customers = st.number_input(
 
 if "shared_rate" not in st.session_state:
     st.session_state["shared_rate"] = ""
+
 shared_rate = st.text_input(
-    "Rate per gram (applies to all customers)",
-    value=st.session_state["shared_rate"]
+    "Rate per gram (applies to all customers)", value=st.session_state["shared_rate"]
 )
 st.session_state["shared_rate"] = shared_rate
 apply_rate_to_all(num_customers, shared_rate)
@@ -117,16 +121,19 @@ if st.button("📅 APPLY TODAY'S DATE"):
 customers = []
 for i in range(num_customers):
     st.subheader(f"Customer {i+1}")
-    name = st.text_input("Customer Name", key=f"name{i}")
-    date = st.text_input("Date (DD-MM-YYYY)", key=f"date{i}")
-    amount = st.text_input("Amount (INR)", key=f"amount{i}")
-    wt = st.text_input("Weight (grams)", key=f"wt{i}")
-    due = st.text_input("Due Date", key=f"due{i}")
-    rate = st.text_input(
-        "Rate per gram", value=st.session_state.get(f"rate{i}", ""), key=f"rate{i}"
-    )
-    adv = st.text_input("Advance %", key=f"adv{i}")
+    col1, col2, col3 = st.columns(3)
     
+    with col1:
+        name = st.text_input("Customer Name", key=f"name{i}")
+        date = st.text_input("Date (DD-MM-YYYY)", key=f"date{i}")
+    with col2:
+        amount = st.text_input("Amount (INR)", key=f"amount{i}")
+        wt = st.text_input("Weight (grams)", key=f"wt{i}")
+    with col3:
+        due = st.text_input("Due Date", key=f"due{i}")
+        rate = st.text_input("Rate per gram", value=st.session_state.get(f"rate{i}", ""), key=f"rate{i}")
+        adv = st.text_input("Advance %", key=f"adv{i}")
+
     if name.strip():
         customers.append({
             "DATE": date,
@@ -147,8 +154,8 @@ if st.button("📊 GENERATE IMAGE"):
         img = generate_image(customers)
         st.image(img)
         st.download_button(
-            "⬇️ DOWNLOAD IMAGE",
-            data=img,
-            file_name="payment_table.png",
+            "⬇️ DOWNLOAD IMAGE", 
+            data=img, 
+            file_name=f"payment_table_{datetime.now().strftime('%H%M%S')}.png", 
             mime="image/png"
         )
