@@ -43,11 +43,11 @@ def generate_image(data):
     table.auto_set_font_size(False)
     table.set_fontsize(15)
     table.scale(1.4, 2.4)
-    
+
     header_color = "#1E3A8A"
     border_color = "#D1D5DB"
     name_col_index = df.columns.get_loc("NAME")
-    
+
     for (row, col), cell in table.get_celd().items():
         cell.set_edgecolor(border_color)
         if row == 0:
@@ -56,14 +56,14 @@ def generate_image(data):
         else:
             cell.set_facecolor("#F9FAFB")
             cell.set_text_props(weight="bold")
-        
+
         # ✅ FORCE WRAP ONLY FOR NAME COLUMN
         if col == name_col_index:
             cell.set_width(0.22)  # 👈 controls wrapping
             cell.get_text().set_wrap(True)
             cell.get_text().set_ha("center")
             cell.get_text().set_va("center")
-    
+
     # IMAGE HEADING
     plt.suptitle(
         "JOS ALUKKAS INDIA PRIVATE LIMITED - BELAGAVI BRANCH",
@@ -71,7 +71,7 @@ def generate_image(data):
         fontweight="bold",
         y=0.98
     )
-    
+
     buf = io.BytesIO()
     plt.savefig(buf, format="png", dpi=300, bbox_inches="tight", facecolor="white")
     plt.close(fig)
@@ -115,7 +115,6 @@ if st.button("📅 APPLY TODAY'S DATE"):
 customers = []
 for i in range(num_customers):
     st.subheader(f"Customer {i+1}")
-    
     name = st.text_input("Customer Name", key=f"name{i}")
     date = st.text_input("Date (DD-MM-YYYY)", key=f"date{i}")
     amount = st.text_input("Amount (INR)", key=f"amount{i}")
@@ -127,7 +126,7 @@ for i in range(num_customers):
         key=f"rate{i}"
     )
     adv = st.text_input("Advance %", key=f"adv{i}")
-    
+
     if name.strip():
         customers.append({
             "DATE": date,
