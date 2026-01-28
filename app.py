@@ -31,8 +31,8 @@ def format_indian(num):
 
 def generate_image(data):
     df = pd.DataFrame(data)
-    # Increased height (figsize) to handle the multi-line name stacking
-    fig, ax = plt.subplots(figsize=(20, 7)) 
+    # Increase figure height significantly to prevent vertical overlap
+    fig, ax = plt.subplots(figsize=(20, 8)) 
     ax.axis("off")
     
     table = ax.table(
@@ -44,32 +44,47 @@ def generate_image(data):
     )
 
     table.auto_set_font_size(False)
-    table.set_fontsize(15)
-    # scale(x, y) -> y=4.0 makes the rows tall enough so stacked text doesn't overlap
-    table.scale(1.4, 4.0) 
+    table.set_fontsize(14)
+    # The 5.0 here creates huge vertical space so words can stack
+    table.scale(1.2, 5.0) 
 
     header_color = "#1E3A8A"
     border_color = "#D1D5DB"
     name_col_index = df.columns.get_loc("NAME")
 
-    for (row, col), cell in table.get_celld().items():
+    # Set specific widths for columns to force wrapping
+    widths = {
+        "DATE": 0.12,
+        "NAME": 0.22,  # Narrow enough to force "Samuel Philip John" to wrap
+        "AMOUNT": 0.14,
+        "WT (g)": 0.10,
+        "DUE DATE": 0.12,
+        "RATE": 0.14,
+        "ADV %": 0.10
+    }
+
+    for (row, col_idx), cell in table.get_celld().items():
         cell.set_edgecolor(border_color)
+        col_name = df.columns[col_idx] if row >= 0 else None
         
-        # ALL TEXT BOLD
-        cell.set_text_props(weight="bold")
+        # Apply the widths defined above
+        if col_idx < len(df.columns):
+            cell.set_width(widths.get(df.columns[col_idx], 0.15))
 
         if row == 0:
             cell.set_facecolor(header_color)
             cell.set_text_props(color="white", weight="bold")
         else:
             cell.set_facecolor("#F9FAFB")
+            cell.set_text_props(weight="bold")
             
-        # ✅ NAME COLUMN WRAPPING LOGIC
-        if col == name_col_index:
-            cell.set_width(0.20) # Narrow width forces words to stack on new lines
-            txt = cell.get_text()
-            txt.set_wrap(True)
-            txt.set_multialignment('center') # Keeps stacked lines centered
+            # FORCE WRAP LOGIC
+            if col_idx == name_col_index:
+                txt = cell.get_text()
+                txt.set_wrap(True)
+                # This ensures it stays centered and doesn't bleed out
+                txt.set_verticalalignment('center')
+                txt.set_multialignment('center')
 
     plt.suptitle(
         "JOS ALUKKAS INDIA PRIVATE LIMITED - BELAGAVI BRANCH",
@@ -115,8 +130,7 @@ if st.button("📅 APPLY TODAY'S DATE"):
 
 customers = []
 for i in range(num_customers):
-    st.markdown(f"### Customer {i+1}")
-    # Back to original vertical layout
+    st.subheader(f"Customer {i+1}")
     name = st.text_input("Customer Name", key=f"name{i}")
     date = st.text_input("Date (DD-MM-YYYY)", key=f"date{i}")
     amount = st.text_input("Amount (INR)", key=f"amount{i}")
