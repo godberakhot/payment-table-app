@@ -31,8 +31,8 @@ def format_indian(num):
 
 def generate_image(data):
     df = pd.DataFrame(data)
-    # Increased figure height to accommodate stacked text
-    fig, ax = plt.subplots(figsize=(22, 8)) 
+    # Increased height (figsize) to handle the multi-line name stacking
+    fig, ax = plt.subplots(figsize=(20, 7)) 
     ax.axis("off")
     
     table = ax.table(
@@ -44,9 +44,9 @@ def generate_image(data):
     )
 
     table.auto_set_font_size(False)
-    table.set_fontsize(16)
-    # Increased vertical scale (4.5) to prevent overlapping when names stack
-    table.scale(1.2, 4.5) 
+    table.set_fontsize(15)
+    # scale(x, y) -> y=4.0 makes the rows tall enough so stacked text doesn't overlap
+    table.scale(1.4, 4.0) 
 
     header_color = "#1E3A8A"
     border_color = "#D1D5DB"
@@ -55,30 +55,25 @@ def generate_image(data):
     for (row, col), cell in table.get_celld().items():
         cell.set_edgecolor(border_color)
         
-        # Set specific widths for columns
-        if col == name_col_index:
-            cell.set_width(0.20) # Narrower width forces the text to wrap/stack
-        else:
-            cell.set_width(0.12)
+        # ALL TEXT BOLD
+        cell.set_text_props(weight="bold")
 
         if row == 0:
             cell.set_facecolor(header_color)
             cell.set_text_props(color="white", weight="bold")
         else:
             cell.set_facecolor("#F9FAFB")
-            # ALL TEXT BOLD
-            cell.set_text_props(weight="bold")
             
-            if col == name_col_index:
-                txt = cell.get_text()
-                txt.set_wrap(True)
-                # This ensures the words stack vertically as requested
-                txt.set_verticalalignment('center')
-                txt.set_multialignment('center')
+        # ✅ NAME COLUMN WRAPPING LOGIC
+        if col == name_col_index:
+            cell.set_width(0.20) # Narrow width forces words to stack on new lines
+            txt = cell.get_text()
+            txt.set_wrap(True)
+            txt.set_multialignment('center') # Keeps stacked lines centered
 
     plt.suptitle(
         "JOS ALUKKAS INDIA PRIVATE LIMITED - BELAGAVI BRANCH",
-        fontsize=24,
+        fontsize=22,
         fontweight="bold",
         y=0.98
     )
@@ -120,19 +115,15 @@ if st.button("📅 APPLY TODAY'S DATE"):
 
 customers = []
 for i in range(num_customers):
-    st.subheader(f"Customer {i+1}")
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        name = st.text_input("Customer Name", key=f"name{i}")
-        date = st.text_input("Date (DD-MM-YYYY)", key=f"date{i}")
-    with col2:
-        amount = st.text_input("Amount (INR)", key=f"amount{i}")
-        wt = st.text_input("Weight (grams)", key=f"wt{i}")
-    with col3:
-        due = st.text_input("Due Date", key=f"due{i}")
-        rate = st.text_input("Rate per gram", value=st.session_state.get(f"rate{i}", ""), key=f"rate{i}")
-        adv = st.text_input("Advance %", key=f"adv{i}")
+    st.markdown(f"### Customer {i+1}")
+    # Back to original vertical layout
+    name = st.text_input("Customer Name", key=f"name{i}")
+    date = st.text_input("Date (DD-MM-YYYY)", key=f"date{i}")
+    amount = st.text_input("Amount (INR)", key=f"amount{i}")
+    wt = st.text_input("Weight (grams)", key=f"wt{i}")
+    due = st.text_input("Due Date", key=f"due{i}")
+    rate = st.text_input("Rate per gram", value=st.session_state.get(f"rate{i}", ""), key=f"rate{i}")
+    adv = st.text_input("Advance %", key=f"adv{i}")
 
     if name.strip():
         customers.append({
@@ -156,6 +147,6 @@ if st.button("📊 GENERATE IMAGE"):
         st.download_button(
             "⬇️ DOWNLOAD IMAGE", 
             data=img, 
-            file_name=f"payment_table_{datetime.now().strftime('%H%M%S')}.png", 
+            file_name="payment_table.png", 
             mime="image/png"
         )
