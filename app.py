@@ -45,6 +45,12 @@ def generate_image(data):
     table.set_fontsize(15)
     table.scale(1.4, 2.4)
 
+    # Set column widths to prevent overlap
+    col_widths = [0.12, 0.25, 0.15, 0.10, 0.12, 0.13, 0.10]  # DATE, NAME, AMOUNT, WT, DUE DATE, RATE, ADV%
+    for i, width in enumerate(col_widths):
+        for row in range(len(df) + 1):
+            table[(row, i)].set_width(width)
+
     header_color = "#1E3A8A"
     border_color = "#D1D5DB"
 
