@@ -36,22 +36,24 @@ def generate_image(data):
     fig, ax = plt.subplots(figsize=(20, 4))
     ax.axis("off")
 
+    # ✅ FIXED COLUMN WIDTHS (NAME IS WIDER)
+    col_widths = [0.12, 0.26, 0.14, 0.10, 0.14, 0.12, 0.12]
+
     table = ax.table(
         cellText=df.values,
         colLabels=df.columns,
         cellLoc="center",
-        loc="center",
-        bbox=[0.02, 0.05, 0.96, 0.9]
+        colWidths=col_widths,
+        loc="center"
     )
 
     table.auto_set_font_size(False)
     table.set_fontsize(15)
-    table.scale(1.4, 2.4)
+    table.scale(1, 2.4)
 
     header_color = "#1E3A8A"
     border_color = "#D1D5DB"
-
-    name_col_index = df.columns.get_loc("NAME")
+    name_col = df.columns.get_loc("NAME")
 
     for (row, col), cell in table.get_celld().items():
         cell.set_edgecolor(border_color)
@@ -63,14 +65,13 @@ def generate_image(data):
             cell.set_facecolor("#F9FAFB")
             cell.set_text_props(weight="bold")
 
-        # ✅ FORCE WRAP ONLY FOR NAME COLUMN
-        if col == name_col_index:
-            cell.set_width(0.22)             # 👈 controls wrapping
+        # ✅ WRAP ONLY NAME COLUMN
+        if col == name_col:
             cell.get_text().set_wrap(True)
             cell.get_text().set_ha("center")
             cell.get_text().set_va("center")
 
-    # IMAGE HEADING
+    # ✅ IMAGE HEADING (NOW GUARANTEED TO SHOW)
     plt.suptitle(
         "JOS ALUKKAS INDIA PRIVATE LIMITED - BELAGAVI BRANCH",
         fontsize=22,
@@ -84,15 +85,15 @@ def generate_image(data):
     buf.seek(0)
     return buf.getvalue()
 
-# ---------------- STREAMLIT SESSION HELPERS ----------------
+# ---------------- STREAMLIT HELPERS ----------------
 
-def apply_today_to_all(num_customers):
-    for i in range(num_customers):
+def apply_today(num):
+    for i in range(num):
         st.session_state[f"date{i}"] = today_date()
 
-def apply_rate_to_all(num_customers, rate_value):
-    for i in range(num_customers):
-        st.session_state[f"rate{i}"] = rate_value
+def apply_rate(num, rate):
+    for i in range(num):
+        st.session_state[f"rate{i}"] = rate
 
 # ---------------- STREAMLIT UI ----------------
 
@@ -108,18 +109,17 @@ num_customers = st.number_input(
 )
 
 if "shared_rate" not in st.session_state:
-    st.session_state["shared_rate"] = ""
+    st.session_state.shared_rate = ""
 
 shared_rate = st.text_input(
     "Rate per gram (applies to all customers)",
-    value=st.session_state["shared_rate"]
+    value=st.session_state.shared_rate
 )
-st.session_state["shared_rate"] = shared_rate
-
-apply_rate_to_all(num_customers, shared_rate)
+st.session_state.shared_rate = shared_rate
+apply_rate(num_customers, shared_rate)
 
 if st.button("📅 APPLY TODAY'S DATE"):
-    apply_today_to_all(num_customers)
+    apply_today(num_customers)
 
 customers = []
 
@@ -131,11 +131,7 @@ for i in range(num_customers):
     amount = st.text_input("Amount (INR)", key=f"amount{i}")
     wt = st.text_input("Weight (grams)", key=f"wt{i}")
     due = st.text_input("Due Date", key=f"due{i}")
-    rate = st.text_input(
-        "Rate per gram",
-        value=st.session_state.get(f"rate{i}", ""),
-        key=f"rate{i}"
-    )
+    rate = st.text_input("Rate per gram", key=f"rate{i}")
     adv = st.text_input("Advance %", key=f"adv{i}")
 
     if name.strip():
